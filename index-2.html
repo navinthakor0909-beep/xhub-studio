@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>X Hub Studio</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{color-scheme:dark;--bg:#0b1020;--panel:#121a2d;--panel2:#18233a;--line:#293650;--text:#f4f7ff;--muted:#9aa9c2;--accent:#7c5cff;--accent2:#22c6a8;--danger:#ff5c70}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:15px Arial,sans-serif;min-height:100vh}
+button,input{font:inherit}button{cursor:pointer;border:0;border-radius:10px;padding:11px 15px;font-weight:700}
+.primary{background:var(--accent);color:white}.secondary{background:var(--panel2);color:var(--text);border:1px solid var(--line)}.danger{background:#44202c;color:#ffb5bf;border:1px solid #713344}
+input{width:100%;background:#0d1527;border:1px solid var(--line);border-radius:10px;padding:13px;color:white;outline:none}input:focus{border-color:var(--accent)}
+.muted{color:var(--muted)}.hidden{display:none!important}
+#loginWrap{min-height:100vh;display:grid;place-items:center;padding:20px}
+.login{width:min(100%,420px);background:var(--panel);border:1px solid var(--line);border-radius:20px;padding:28px;box-shadow:0 20px 70px #0006}
+.logo{width:48px;height:48px;border-radius:15px;background:linear-gradient(135deg,var(--accent),#21c9b0);display:grid;place-items:center;font-weight:900;font-size:22px;margin-bottom:18px}
+h1{font-size:25px;margin:0 0 7px}h2{font-size:20px;margin:0}label{display:block;font-size:13px;color:var(--muted);margin:18px 0 7px}
+#loginBtn{width:100%;margin-top:20px}.error{color:#ff9eaa;margin-top:12px;font-size:13px;white-space:pre-wrap}
+header{height:70px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;padding:0 22px;background:#0d1425;position:sticky;top:0;z-index:3}
+.brand{display:flex;align-items:center;gap:11px;font-weight:800;font-size:18px}.brand .logo{width:36px;height:36px;font-size:17px;margin:0;border-radius:11px}
+.layout{display:flex;min-height:calc(100vh - 70px)}aside{width:220px;padding:20px 13px;border-right:1px solid var(--line);background:#0e1628}
+.nav{display:flex;align-items:center;gap:12px;padding:13px 14px;color:var(--muted);border-radius:10px;margin-bottom:6px;cursor:pointer;font-weight:700}.nav.active,.nav:hover{background:#202b46;color:white}
+main{flex:1;padding:26px;max-width:1200px;margin:0 auto;width:100%}.topline{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:22px}
+.stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin-bottom:25px}.stat{background:var(--panel);border:1px solid var(--line);border-radius:15px;padding:18px}.stat strong{display:block;font-size:27px;margin-top:9px}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:15px;padding:20px;margin-bottom:18px}
+.uploadrow{display:grid;grid-template-columns:1fr 1.5fr auto;gap:10px;align-items:end}.uploadrow label{margin-top:0}
+.video{display:flex;align-items:center;gap:14px;padding:13px 0;border-bottom:1px solid var(--line)}.video:last-child{border-bottom:0}
+.thumb{width:105px;height:66px;flex-shrink:0;border-radius:9px;background:#202b46;display:grid;place-items:center;color:#aab7d0;font-size:25px;overflow:hidden}.thumb video{width:100%;height:100%;object-fit:cover}
+.vinfo{flex:1;min-width:0}.vtitle{font-weight:700;overflow-wrap:anywhere}.vdate{font-size:12px;color:var(--muted);margin-top:6px}
+.actions{display:flex;gap:7px}.iconbtn{padding:9px 11px;background:var(--panel2);border:1px solid var(--line);color:white}.empty{padding:30px;text-align:center;color:var(--muted)}
+#notice{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:#202b46;border:1px solid var(--line);padding:12px 17px;border-radius:12px;z-index:5;display:none;max-width:90vw}
+@media(max-width:700px){header{padding:0 14px}.layout{display:block}aside{width:100%;display:flex;gap:5px;padding:8px;border-right:0;border-bottom:1px solid var(--line);position:sticky;top:70px;z-index:2}.nav{flex:1;justify-content:center;padding:11px 7px;font-size:13px;margin:0}.nav span{display:none}main{padding:17px 13px}.stats{grid-template-columns:1fr 1fr}.stat:last-child{grid-column:span 2}.uploadrow{grid-template-columns:1fr}.video{gap:9px}.thumb{width:78px;height:58px}.actions{flex-direction:column}.actions button{padding:8px}.topline{align-items:flex-start}}
+</style>
+</head>
+<body>
+<section id="loginWrap">
+  <div class="login">
+    <div class="logo">X</div>
+    <h1>X Hub Studio</h1>
+    <p class="muted">Creator sign in</p>
+    <form id="loginForm">
+      <label for="email">Gmail / Email</label><input id="email" type="email" autocomplete="username" required placeholder="Enter your email">
+      <label for="password">Password</label><input id="password" type="password" autocomplete="current-password" required placeholder="Enter your password">
+      <button class="primary" id="loginBtn" type="submit">Login</button>
+      <div id="loginError" class="error"></div>
+    </form>
+  </div>
+</section>
+<section id="app" class="hidden">
+<header><div class="brand"><div class="logo">X</div>X Hub Studio</div><button class="secondary" id="logoutBtn">Logout</button></header>
+<div class="layout">
+<aside>
+  <div class="nav active" data-page="dashboard">▦ <span>Dashboard</span></div>
+  <div class="nav" data-page="content">▣ <span>Content</span></div>
+</aside>
+<main>
+  <section id="dashboardPage">
+    <div class="topline"><div><h1>Dashboard</h1><div class="muted" id="welcome">Welcome back</div></div></div>
+    <div class="stats">
+      <div class="stat"><div class="muted">My Videos</div><strong id="statVideos">0</strong></div>
+      <div class="stat"><div class="muted">Account</div><strong style="font-size:16px" id="statAccount">Creator</strong></div>
+      <div class="stat"><div class="muted">Studio</div><strong style="font-size:16px">X Hub</strong></div>
+    </div>
+    <div class="panel"><h2>Quick start</h2><p class="muted">Upload a video or manage the titles of your existing videos.</p><button class="primary" id="goContent">Open Content</button></div>
+  </section>
+  <section id="contentPage" class="hidden">
+    <div class="topline"><div><h1>Content</h1><div class="muted">Upload and manage your videos</div></div><button class="secondary" id="refreshBtn">Refresh</button></div>
+    <div class="panel">
+      <h2>Upload video</h2>
+      <form id="uploadForm" class="uploadrow">
+        <div><label for="videoTitle">Video title</label><input id="videoTitle" maxlength="150" required placeholder="Enter video title"></div>
+        <div><label for="videoFile">Video file</label><input id="videoFile" type="file" accept="video/*" required></div>
+        <button class="primary" id="uploadBtn" type="submit">Upload</button>
+      </form>
+      <p class="muted" style="font-size:12px;margin-bottom:0">Upload size and access depend on your Supabase Storage settings.</p>
+    </div>
+    <div class="panel"><h2 style="margin-bottom:12px">Your videos</h2><div id="videoList"><div class="empty">Loading videos...</div></div></div>
+  </section>
+</main>
+</div>
+</section>
+<div id="notice"></div>
+<script>
+const SUPABASE_URL = "https://scczyiossqleuzidplxx.supabase.co";
+const SUPABASE_KEY = "sb_publishable_rvecUf_3ZkeAxnbAJ8iiiw_2mItGPT2";
+const BUCKET = "Videos";
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+  auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true }
+});
+let currentUser = null;
+const $ = id => document.getElementById(id);
+function notice(message){const n=$("notice");n.textContent=message;n.style.display="block";clearTimeout(notice.timer);notice.timer=setTimeout(()=>n.style.display="none",3500)}
+function showApp(user){currentUser=user;$("loginWrap").classList.add("hidden");$("app").classList.remove("hidden");$("welcome").textContent=user.email||"Creator";$("statAccount").textContent=(user.email||"Creator").split("@")[0];loadVideos()}
+function showLogin(){$("app").classList.add("hidden");$("loginWrap").classList.remove("hidden");currentUser=null}
+function openPage(page){$("dashboardPage").classList.toggle("hidden",page!=="dashboard");$("contentPage").classList.toggle("hidden",page!=="content");document.querySelectorAll(".nav").forEach(n=>n.classList.toggle("active",n.dataset.page===page));if(page==="content")loadVideos()}
+document.querySelectorAll(".nav").forEach(n=>n.addEventListener("click",()=>openPage(n.dataset.page)));
+$("goContent").addEventListener("click",()=>openPage("content"));
+$("loginForm").addEventListener("submit",async e=>{
+ e.preventDefault();$("loginError").textContent="";$("loginBtn").disabled=true;$("loginBtn").textContent="Signing in...";
+ const {data,error}=await sb.auth.signInWithPassword({email:$("email").value.trim(),password:$("password").value});
+ $("loginBtn").disabled=false;$("loginBtn").textContent="Login";
+ if(error){$("loginError").textContent=error.message;return}
+ showApp(data.user);
+});
+$("logoutBtn").addEventListener("click",async()=>{const {error}=await sb.auth.signOut();if(error){notice(error.message);return}showLogin()});
+sb.auth.onAuthStateChange((event,session)=>{if(session?.user){if(!$("app").classList.contains("hidden")){currentUser=session.user}else{showApp(session.user)}}else if(event==="SIGNED_OUT"){showLogin()}});
+async function loadVideos(){
+ if(!currentUser)return;
+ $("videoList").innerHTML='<div class="empty">Loading videos...</div>';
+ const {data,error}=await sb.from("videos").select("*").eq("user_id",currentUser.id).order("created_at",{ascending:false});
+ if(error){$("videoList").innerHTML='<div class="empty">Could not load videos: '+escapeHtml(error.message)+'</div>';return}
+ $("statVideos").textContent=data.length;
+ if(!data.length){$("videoList").innerHTML='<div class="empty">No videos uploaded yet.</div>';return}
+ $("videoList").innerHTML="";
+ data.forEach(v=>{
+  const item=document.createElement("div");item.className="video";
+  const thumb=document.createElement("div");thumb.className="thumb";thumb.textContent="▶";
+  const info=document.createElement("div");info.className="vinfo";
+  const title=document.createElement("div");title.className="vtitle";title.textContent=v.title||"Untitled video";
+  const date=document.createElement("div");date.className="vdate";date.textContent=v.created_at?new Date(v.created_at).toLocaleString():"";
+  info.append(title,date);
+  const actions=document.createElement("div");actions.className="actions";
+  const edit=document.createElement("button");edit.className="iconbtn";edit.type="button";edit.title="Edit title";edit.textContent="✏️";
+  edit.addEventListener("click",()=>editTitle(v));
+  const del=document.createElement("button");del.className="danger";del.type="button";del.title="Delete video";del.textContent="🗑️";
+  del.addEventListener("click",()=>deleteVideo(v,del));
+  actions.append(edit,del);item.append(thumb,info,actions);$("videoList").append(item);
+ });
+}
+function escapeHtml(s){return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
+async function editTitle(video){
+ const next=prompt("Enter new video title:",video.title||"");if(next===null)return;
+ const title=next.trim();if(!title){notice("Title cannot be empty.");return}
+ const {error}=await sb.from("videos").update({title}).eq("id",video.id).eq("user_id",currentUser.id);
+ if(error){notice("Title update failed: "+error.message);return}
+ notice("Video title updated.");loadVideos();
+}
+async function deleteVideo(video,button){
+ if(!confirm('Delete "'+(video.title||"this video")+'" permanently?'))return;
+ button.disabled=true;
+ if(video.file_path){
+  const {error:storageError}=await sb.storage.from(BUCKET).remove([video.file_path]);
+  if(storageError){button.disabled=false;notice("File delete failed: "+storageError.message);return}
+ }
+ const {error}=await sb.from("videos").delete().eq("id",video.id).eq("user_id",currentUser.id);
+ if(error){button.disabled=false;notice("Database delete failed: "+error.message);return}
+ notice("Video deleted.");loadVideos();
+}
+$("uploadForm").addEventListener("submit",async e=>{
+ e.preventDefault();if(!currentUser)return;
+ const file=$("videoFile").files[0],title=$("videoTitle").value.trim();if(!file||!title)return;
+ const btn=$("uploadBtn");btn.disabled=true;btn.textContent="Uploading...";
+ const safeName=file.name.replace(/[^a-zA-Z0-9._-]/g,"_");
+ const path=currentUser.id+"/"+Date.now()+"_"+safeName;
+ const {error:uploadError}=await sb.storage.from(BUCKET).upload(path,file,{upsert:false,contentType:file.type||"video/mp4"});
+ if(uploadError){notice("Upload failed: "+uploadError.message);btn.disabled=false;btn.textContent="Upload";return}
+ const {error:insertError}=await sb.from("videos").insert({title,description:"",file_path:path,user_id:currentUser.id});
+ if(insertError){await sb.storage.from(BUCKET).remove([path]);notice("Video record save failed: "+insertError.message);btn.disabled=false;btn.textContent="Upload";return}
+ $("uploadForm").reset();notice("Video uploaded successfully.");btn.disabled=false;btn.textContent="Upload";loadVideos();
+});
+$("refreshBtn").addEventListener("click",loadVideos);
+(async()=>{const {data,error}=await sb.auth.getSession();if(error){$("loginError").textContent=error.message;return}if(data.session?.user)showApp(data.session.user)})();
+</script>
+</body>
+</html>
